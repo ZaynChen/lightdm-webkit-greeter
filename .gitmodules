@@ -1,3 +1,4 @@
 [submodule "themes/lightdm-webkit-theme-litarvan"]
+	branch = migrate2vue3
 	path = themes/lightdm-webkit-theme-litarvan
 	url = https://github.com/ZaynChen/lightdm-webkit-theme-litarvan
