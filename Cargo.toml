@@ -1,0 +1,17 @@
+[workspace]
+resolver = "3"
+members = ["ext", "greeter", "webext"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Zayn Chen <zaynchen@qq.com>"]
+categories = ["GUI"]
+repository = "https://github.com/zaynchen/lightdm-webkit-greeter"
+license = "GPL-3.0"
+keywords = ["lightdm"]
+
+[workspace.dependencies]
+gtk = { package = "gtk4", version = "0.10", features = ["v4_20"] }
+jsc = { package = "javascriptcore6", version = "0.5", features = ["v2_48"] }
+ext = { path = "ext" }

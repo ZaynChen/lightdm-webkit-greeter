@@ -1,0 +1,14 @@
+[package]
+name = "ext"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+
+[dependencies]
+gtk = { workspace = true }
+jsc = { workspace = true }
+lightdm = { git = "https://github.com/ZaynChen/lightdm-rs.git", version = "0.1.0" }
