@@ -42,6 +42,8 @@ However, it is functional :D
 ## Build and install
 
 ```sh
+git clone https://github.com/ZaynChen/lightdm-webkit-greeter --recursive
+cd lightdm-webkit-greeter
 ./install.sh
 ```
 
