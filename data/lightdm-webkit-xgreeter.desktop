@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=Web Greeter
+Name=LightDM WebKit Greeter
 Comment=Greeter for LightDM
 Exec=lightdm-webkit-greeter
 Type=Application

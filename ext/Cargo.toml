@@ -1,5 +1,6 @@
 [package]
 name = "ext"
+description = "Missing rust bindings for javascriptcore and lightdm"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

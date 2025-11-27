@@ -1,14 +1,14 @@
 <div align="center">
-  <h1><strong>lightdm-webkit-greeter</strong></h1>
+  <h1><strong>LightDM WebKit Greeter</strong></h1>
   <p>
     <strong>Another LightDM greeter made with WebKitGTK</strong>
   </p>
 </div>
 
-lightdm-webkit-greeter for LightDM allows to create themes with web technologies,
+LightDM WebKit Greeter for LightDM allows to create themes with web technologies,
 the same as the outdated [lightdm-webkit2-greeter][webkit2-greeter]. This project
-is the rust version of [sea-greeter][sea-greeter], with migration from gtk3 and
-webkit2gtk to gtk4 and webkitgtk.
+is ported from [sea-greeter][sea-greeter], with migration from gtk3 and webkit2gtk
+to gtk4 and webkitgtk.
 
 ## Known issues
 

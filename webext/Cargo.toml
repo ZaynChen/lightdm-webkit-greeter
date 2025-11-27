@@ -1,5 +1,6 @@
 [package]
 name = "lightdm-webkit-greeter-webext"
+description = "Web process extension for LightDM WebKit Greeter"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
