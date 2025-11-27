@@ -7,121 +7,56 @@ const send_request = (target, method, args) => {
   return window.send_request(request);
 };
 
-class GreeterComm {
-  #send_request(method, args) {
-    return send_request("greeter_comm", method, args);
-  }
-  get window_metadata() {
-    return this.#send_request("window_metadata");
-  }
-  broadcast(data) {
-    return this.#send_request("broadcast", [data]);
-  }
-  _emit(data) {
-    const broadcast_event = new Event("GreeterBroadcastEvent");
-    broadcast_event.window = null;
-    broadcast_event.data = data;
-    dispatchEvent(broadcast_event);
+class LightDMLanguage {
+  code;
+  name;
+  territory;
+  constructor({ code, name, territory }) {
+    this.code = code;
+    this.name = name;
+    this.territory = territory;
   }
 }
 
-class GreeterConfig {
-  #send_request(method) {
-    return send_request("greeter_config", method);
-  }
-  get branding() {
-    return this.#send_request("branding");
-  }
-  get greeter() {
-    return this.#send_request("greeter");
-  }
-  get features() {
-    return this.#send_request("features");
-  }
-  get layouts() {
-    return this.#send_request("layouts");
+class LightDMLayout {
+  description;
+  name;
+  short_description;
+  constructor({ description, name, short_description }) {
+    this.description = description;
+    this.name = name;
+    this.short_description = short_description;
   }
 }
 
-class ThemeUtils {
-  #time_language;
-  constructor() {
-    this.#time_language = send_request(
-      "greeter_config",
-      "greeter",
-    ).time_language;
+class LightDMSession {
+  comment;
+  key;
+  name;
+  type;
+  constructor({ comment, key, name, type }) {
+    this.comment = comment;
+    this.key = key;
+    this.name = name;
+    this.type = type;
   }
-  #send_request(method, args) {
-    return send_request("theme_utils", method, args);
-  }
-  /**
-   * Returns the contents of directory found at `path` provided that the (normalized) `path`
-   * meets at least one of the following conditions:
-   *   * Is located within the greeter themes' root directory.
-   *   * Has been explicitly allowed in the greeter's config file.
-   *   * Is located within the greeter's shared data directory (`/var/lib/lightdm-data`).
-   *   * Is located in `/tmp`.
-   *
-   * @param {string}              path        The abs path to desired directory.
-   * @param {boolean}             only_images Include only images in the results. Default `true`.
-   * @param {function(string[])}  callback    Callback function to be called with the result.
-   */
-  dirlist(path, only_image = true, callback) {
-    if ("" === path || "string" !== typeof path) {
-      console.error(
-        "[ERROR] theme_utils.dirlist(): path must be a non-empty string!",
-      );
-      return callback([]);
-    } else if (null !== path.match(/^[^/].+/)) {
-      console.error("[ERROR] theme_utils.dirlist(): path must be absolute!");
-      return callback([]);
-    }
+}
 
-    if (null !== path.match(/\/\.+(?=\/)/)) {
-      // No special directory names allowed (eg ../../)
-      path = path.replace(/\/\.+(?=\/)/g, "");
-    }
-
-    try {
-      const result = this.#send_request("dirlist", [path, only_image]);
-      callback(result);
-      return result;
-    } catch (err) {
-      console.error(`[ERROR] theme_utils.dirlist(): ${err}`);
-      return callback([]);
-    }
-  }
-  get_current_localized_date() {
-    const locales = [];
-    if (this.#time_language !== "") {
-      locales.push(this.#time_language);
-    }
-    return new Intl.DateTimeFormat(locales, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-    }).format(new Date());
-  }
-  /**
-   * Get the current time in a localized format. Time format and language are auto-detected
-   * by default, but can be set manually in the greeter config file.
-   *   * `language` defaults to the system's language, but can be set manually in the config file.
-   *   * When `time_format` config file option has a valid value, time will be formatted
-   *     according to that value.
-   *   * When `time_format` does not have a valid value, the time format will be `LT`
-   *     which is `1:00 PM` or `13:00` depending on the system's locale.
-   *
-   * @return {string} The current localized time.
-   */
-  get_current_localized_time() {
-    const locales = [];
-    if (this.#time_language !== "") {
-      locales.push(this.#time_language);
-    }
-    return new Intl.DateTimeFormat(locales, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date());
+class LightDMUser {
+  background;
+  display_name;
+  home_directory;
+  image;
+  language;
+  layout;
+  layouts;
+  logged_in;
+  session;
+  username;
+  constructor(user_info) {
+    Object.keys(user_info).forEach((key) => {
+      this[key] = user_info[key];
+    });
   }
 }
 
@@ -319,7 +254,7 @@ class LightDMGreeter {
    * @readonly
    */
   get languages() {
-    return this.#send_request("languages");
+    return this.#send_request("languages").map((l) => new LightDMLanguage(l));
   }
 
   /**
@@ -327,7 +262,7 @@ class LightDMGreeter {
    * @type {LightDM.Layout}
    */
   get layout() {
-    return this.#send_request("layout");
+    return new LightDMLayout(this.#send_request("layout"));
   }
 
   /**
@@ -344,7 +279,7 @@ class LightDMGreeter {
    * @readonly
    */
   get layouts() {
-    return this.#send_request("layouts");
+    return this.#send_request("layouts").map((l) => new LightDMLayout(l));
   }
 
   /**
@@ -362,7 +297,9 @@ class LightDMGreeter {
    * @readonly
    */
   get remote_sessions() {
-    return this.#send_request("remote_sessions");
+    return this.#send_request("remote_sessions").map(
+      (s) => new LightDMSession(s),
+    );
   }
 
   /**
@@ -389,7 +326,7 @@ class LightDMGreeter {
    * @readonly
    */
   get sessions() {
-    return this.#send_request("sessions");
+    return this.#send_request("sessions").map((s) => new LightDMSession(s));
   }
 
   /**
@@ -420,7 +357,7 @@ class LightDMGreeter {
    * @readonly
    */
   get users() {
-    return this.#send_request("users");
+    return this.#send_request("users").map((u) => new LightDMUser(u));
   }
 
   get shared_data_directory() {
@@ -513,6 +450,124 @@ class LightDMGreeter {
    */
   suspend() {
     return this.#send_request("suspend");
+  }
+}
+
+class GreeterComm {
+  #send_request(method, args) {
+    return send_request("greeter_comm", method, args);
+  }
+  get window_metadata() {
+    return this.#send_request("window_metadata");
+  }
+  broadcast(data) {
+    return this.#send_request("broadcast", [data]);
+  }
+  _emit(data) {
+    const broadcast_event = new Event("GreeterBroadcastEvent");
+    broadcast_event.window = null;
+    broadcast_event.data = data;
+    dispatchEvent(broadcast_event);
+  }
+}
+
+class GreeterConfig {
+  #send_request(method) {
+    return send_request("greeter_config", method);
+  }
+  get branding() {
+    return this.#send_request("branding");
+  }
+  get greeter() {
+    return this.#send_request("greeter");
+  }
+  get features() {
+    return this.#send_request("features");
+  }
+  get layouts() {
+    return this.#send_request("layouts");
+  }
+}
+
+class ThemeUtils {
+  #time_language;
+  constructor() {
+    this.#time_language = send_request(
+      "greeter_config",
+      "greeter",
+    ).time_language;
+  }
+  #send_request(method, args) {
+    return send_request("theme_utils", method, args);
+  }
+  /**
+   * Returns the contents of directory found at `path` provided that the (normalized) `path`
+   * meets at least one of the following conditions:
+   *   * Is located within the greeter themes' root directory.
+   *   * Has been explicitly allowed in the greeter's config file.
+   *   * Is located within the greeter's shared data directory (`/var/lib/lightdm-data`).
+   *   * Is located in `/tmp`.
+   *
+   * @param {string}              path        The abs path to desired directory.
+   * @param {boolean}             only_images Include only images in the results. Default `true`.
+   * @param {function(string[])}  callback    Callback function to be called with the result.
+   */
+  dirlist(path, only_image = true, callback) {
+    if ("" === path || "string" !== typeof path) {
+      console.error(
+        "[ERROR] theme_utils.dirlist(): path must be a non-empty string!",
+      );
+      return callback([]);
+    } else if (null !== path.match(/^[^/].+/)) {
+      console.error("[ERROR] theme_utils.dirlist(): path must be absolute!");
+      return callback([]);
+    }
+
+    if (null !== path.match(/\/\.+(?=\/)/)) {
+      // No special directory names allowed (eg ../../)
+      path = path.replace(/\/\.+(?=\/)/g, "");
+    }
+
+    try {
+      const result = this.#send_request("dirlist", [path, only_image]);
+      callback(result);
+      return result;
+    } catch (err) {
+      console.error(`[ERROR] theme_utils.dirlist(): ${err}`);
+      return callback([]);
+    }
+  }
+  get_current_localized_date() {
+    const locales = [];
+    if (this.#time_language !== "") {
+      locales.push(this.#time_language);
+    }
+    return new Intl.DateTimeFormat(locales, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }).format(new Date());
+  }
+  /**
+   * Get the current time in a localized format. Time format and language are auto-detected
+   * by default, but can be set manually in the greeter config file.
+   *   * `language` defaults to the system's language, but can be set manually in the config file.
+   *   * When `time_format` config file option has a valid value, time will be formatted
+   *     according to that value.
+   *   * When `time_format` does not have a valid value, the time format will be `LT`
+   *     which is `1:00 PM` or `13:00` depending on the system's locale.
+   *
+   * @return {string} The current localized time.
+   */
+  get_current_localized_time() {
+    const locales = [];
+    if (this.#time_language !== "") {
+      locales.push(this.#time_language);
+    }
+    return new Intl.DateTimeFormat(locales, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date());
   }
 }
 
