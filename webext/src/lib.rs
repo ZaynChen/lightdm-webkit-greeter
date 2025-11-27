@@ -47,7 +47,7 @@ fn web_page_console_message_sent(
     match message.level() {
         wwpe::ConsoleMessageLevel::Error => {
             eprintln!("{timestamp} [ ERROR ] {source_id} {line}: {text}");
-            if !source_id.starts_with("file://") && !*stop_prompts.borrow() && detect_theme_errors {
+            if !*stop_prompts.borrow() && detect_theme_errors {
                 web_page_send_console_message_to_view(page, &text, &source_id, line, stop_prompts);
             }
         }

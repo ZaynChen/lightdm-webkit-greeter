@@ -78,12 +78,12 @@ pub fn show_console_error_prompt(
     let line = u32::from_variant(&params.child_value(3)).unwrap();
 
     let dialog = gtk::AlertDialog::builder()
-        .message("An error ocurred. Do you want to change to default theme? (litarvan)")
+        .message("An error ocurred. Do you want to change to default theme? (gruvbox)")
         .detail(format!(r##"{source_id} {line}: {msg}"##))
         .buttons(["_Cancel", "_Use default theme", "_Reload theme"])
         .build();
 
-    let root = webview.root().expect("webview.root is not a browser");
+    let root = webview.root().expect("webview.root is None");
     let window = root
         .downcast_ref::<gtk::ApplicationWindow>()
         .expect("webview.root is not a ApplicationWindow");

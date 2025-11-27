@@ -92,7 +92,11 @@ class ThemeUtils {
     }
   }
   get_current_localized_date() {
-    return new Intl.DateTimeFormat(this.#time_language, {
+    const locales = [];
+    if (this.#time_language !== "") {
+      locales.push(this.#time_language);
+    }
+    return new Intl.DateTimeFormat(locales, {
       day: "2-digit",
       month: "2-digit",
       year: "2-digit",
@@ -110,7 +114,11 @@ class ThemeUtils {
    * @return {string} The current localized time.
    */
   get_current_localized_time() {
-    return new Intl.DateTimeFormat(this.#time_language, {
+    const locales = [];
+    if (this.#time_language !== "") {
+      locales.push(this.#time_language);
+    }
+    return new Intl.DateTimeFormat(locales, {
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date());
@@ -134,9 +142,9 @@ class LightDMSignal {
       this._callbacks = this._callbacks.filter((_cb) => _cb !== callback);
     }
   }
-  emit(args) {
+  emit(...args) {
     this._callbacks.forEach((callback) => {
-      callback(args);
+      callback(...args);
     });
   }
 }
@@ -512,4 +520,5 @@ window.greeter_comm = new GreeterComm();
 window.greeter_config = new GreeterConfig();
 window.lightdm = new LightDMGreeter();
 window.theme_utils = new ThemeUtils();
-window.dispatch_ready_event = () => dispatchEvent(new Event("GreeterReady"));
+window._ready_event = new Event("GreeterReady");
+window.dispatch_ready_event = () => dispatchEvent(window._ready_event);
