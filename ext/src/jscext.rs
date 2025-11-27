@@ -36,6 +36,49 @@ pub trait JSCValueExtManual: IsA<Value> + 'static {
         }
     }
 
+    #[doc(alias = "jsc_value_new_function_variadic")]
+    fn new_function_variadic<F>(context: &Context, name: Option<&str>, callback: F) -> Value
+    where
+        F: Fn(&[Value]) -> Option<Value> + 'static,
+    {
+        unsafe extern "C" fn trampoline<F>(
+            params: *mut GPtrArray,
+            user_data: gpointer,
+        ) -> Option<Value>
+        where
+            F: Fn(&[Value]) -> Option<Value>,
+        {
+            unsafe {
+                let f: &F = &*(user_data as *const F);
+                f(&Value::from_glib_none_as_vec(params))
+            }
+        }
+
+        unsafe extern "C" fn destroy_closure<F>(user_data: gpointer)
+        where
+            F: Fn(&[Value]) -> Option<Value>,
+        {
+            // destroy
+            unsafe {
+                let _ = Box::<F>::from_raw(user_data as *mut _);
+            }
+        }
+
+        unsafe {
+            let callback = Box::into_raw(Box::new(callback));
+            from_glib_none(jsc::ffi::jsc_value_new_function_variadic(
+                context.to_glib_none().0,
+                name.to_glib_none().0,
+                Some(std::mem::transmute::<*const (), unsafe extern "C" fn()>(
+                    trampoline::<F> as *const (),
+                )),
+                callback as gpointer,
+                Some(destroy_closure::<F>),
+                Value::static_type().into_glib(),
+            ))
+        }
+    }
+
     fn to_vec(&self) -> Vec<Value> {
         let this = self.as_ref();
         if !this.is_array() {

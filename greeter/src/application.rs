@@ -1,5 +1,11 @@
 use glib::translate::*;
-use gtk::{gdk, gio, glib, prelude::*};
+use gtk::{
+    Application, CssProvider,
+    gdk::{Display, Monitor},
+    gio::{ActionEntry, Cancellable, File, MenuModel},
+    glib,
+    prelude::*,
+};
 
 use std::rc::Rc;
 
@@ -8,25 +14,36 @@ use crate::{bridge::Dispatcher, browser::Browser, settings::Settings, webview::w
 const PRIMARY_MONITOR: usize = 0;
 const WEB_EXTENSIONS_DIR: &str = "/usr/lib/lightdm-webkit-greeter";
 
-pub fn on_activate(app: &gtk::Application, debug: bool, theme: Option<&str>) {
+pub fn on_activate(app: &Application, debug: bool, theme: Option<&str>) {
     let config = Settings::new(debug, theme);
+    let debug = config.debug_mode();
 
     let secure_mode = config.secure_mode();
     let detect_theme_error = config.detect_theme_errors();
 
+    let api = if let Ok((content, _)) =
+        File::for_uri("resource:///com/github/zaynchen/lightdm-webkit-greeter/lightdm.js")
+            .load_contents(Cancellable::NONE)
+    {
+        String::from_utf8(content.to_vec()).unwrap()
+    } else {
+        "".to_string()
+    };
+
     let webcontext = webkit::WebContext::default().expect("default web context does not exist");
     webcontext.set_cache_model(webkit::CacheModel::DocumentViewer);
     webcontext.connect_initialize_web_process_extensions(move |context: &webkit::WebContext| {
-        let data = (secure_mode, detect_theme_error).to_variant();
+        let data = (secure_mode, detect_theme_error, &api).to_variant();
         logger_debug!("Extension initialized");
 
         context.set_web_process_extensions_directory(WEB_EXTENSIONS_DIR);
         context.set_web_process_extensions_initialization_user_data(&data);
     });
 
-    let display = gdk::Display::default().expect("Default display does not exist");
-    let provider = gtk::CssProvider::new();
-    provider.load_from_resource("com/github/zaynchen/lightdm-webkit-greeter/style.css");
+    let display = Display::default().expect("Default display does not exist");
+    let provider = CssProvider::new();
+    provider.load_from_resource("/com/github/zaynchen/lightdm-webkit-greeter/style.css");
+
     gtk::style_context_add_provider_for_display(
         &display,
         &provider,
@@ -38,7 +55,7 @@ pub fn on_activate(app: &gtk::Application, debug: bool, theme: Option<&str>) {
     let secondary_html = config.secondary_html().unwrap();
     let browsers: Vec<Browser> = display
         .monitors()
-        .iter::<gdk::Monitor>()
+        .iter::<Monitor>()
         .filter_map(|m| m.ok())
         .map(|m| (gen_id(&m), m.geometry()))
         .enumerate()
@@ -70,7 +87,7 @@ pub fn on_activate(app: &gtk::Application, debug: bool, theme: Option<&str>) {
     })
 }
 
-pub fn on_startup(app: &gtk::Application) {
+pub fn on_startup(app: &Application) {
     app.set_accels_for_action("app.quit", &["<Ctl>Q"]);
     app.set_accels_for_action("win.toggle-inspector", &["<Ctl><Shift>I", "F12"]);
 
@@ -98,13 +115,13 @@ pub fn on_startup(app: &gtk::Application) {
     app.set_accels_for_action("win.close", &["<Ctl>W"]);
     app.set_accels_for_action("win.minimize", &["<Ctl>M"]);
 
-    app.add_action_entries([gio::ActionEntry::builder("quit")
-        .activate(|app: &gtk::Application, _, _| app.quit())
+    app.add_action_entries([ActionEntry::builder("quit")
+        .activate(|app: &Application, _, _| app.quit())
         .build()]);
 
     app.set_menubar(
         gtk::Builder::from_resource("/com/github/zaynchen/lightdm-webkit-greeter/menubar.ui")
-            .object::<gio::MenuModel>("menu")
+            .object::<MenuModel>("menu")
             .as_ref(),
     );
 }
@@ -123,7 +140,7 @@ fn set_cursor(display: &gtk::gdk::Display) {
     }
 }
 
-fn gen_id(monitor: &gdk::Monitor) -> u64 {
+fn gen_id(monitor: &Monitor) -> u64 {
     let manufacture = monitor.manufacturer();
     let model = monitor.model();
     let manufacture_hash = manufacture.map_or(0, |m| unsafe {

@@ -46,7 +46,7 @@ pub fn user_message_received(
                     webview.grab_focus();
                     window.present();
                     loaded.set(true);
-                    logger_debug!("Sea greeter started win: {}", window.id());
+                    logger_debug!("Lightdm webkit greeter started win: {}", window.id());
                     true
                 }
                 Err(_) => {

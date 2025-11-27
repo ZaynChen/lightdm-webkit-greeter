@@ -36,7 +36,7 @@ fn main() -> glib::ExitCode {
     app.connect_startup(on_startup);
 
     let exit_code = app.run_with_args::<glib::GString>(&[]);
-    logger_debug!("Sea Greeter stopped");
+    logger_debug!("LightDM WebKit Greeter stopped");
     exit_code
 }
 

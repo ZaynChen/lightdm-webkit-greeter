@@ -24,7 +24,7 @@ fn web_page_send_console_message_to_view(
     let message = wwpe::UserMessage::new("console", Some(&params));
     if let Ok(reply) = MainContext::default().block_on(page.send_message_to_view_future(&message)) {
         stop_prompts.replace(
-            <bool>::from_variant(&reply.parameters().unwrap()).expect("reply is not boolean"),
+            bool::from_variant(&reply.parameters().unwrap()).expect("reply is not boolean"),
         );
     }
 }
@@ -96,16 +96,18 @@ unsafe extern "C" fn webkit_web_process_extension_initialize_with_user_data(
     extension: *mut WebKitWebProcessExtension,
     user_data: *const GVariant,
 ) {
-    let extention: wwpe::WebProcessExtension = unsafe { from_glib_none(extension) };
     let user_data: glib::Variant = unsafe { from_glib_none(user_data) };
     let secure_mode =
-        <bool>::from_variant(&user_data.child_value(0)).expect("secure_mode is not a bool");
-    let detect_theme_errors = <bool>::from_variant(&user_data.child_value(1))
-        .expect("detect_theme_errors is not an bool");
+        bool::from_variant(&user_data.child_value(0)).expect("secure_mode is not a bool");
+    let detect_theme_errors =
+        bool::from_variant(&user_data.child_value(1)).expect("detect_theme_errors is not a bool");
 
+    let extention: wwpe::WebProcessExtension = unsafe { from_glib_none(extension) };
     extention.connect_page_created(move |_, page| {
         web_page_created(page, secure_mode, detect_theme_errors)
     });
 
-    crate::extension::web_page_initialize();
+    let lightdm_api_script = String::from_variant(&user_data.child_value(2))
+        .expect("lightdm_api_script is not a String");
+    crate::extension::web_page_initialize(lightdm_api_script);
 }

@@ -84,13 +84,13 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        load_configuration(None, None)
+        load_configuration(false, None)
     }
 }
 
 impl Settings {
     pub fn new(debug: bool, theme: Option<&str>) -> Self {
-        load_configuration(Some(debug), theme)
+        load_configuration(debug, theme)
     }
 
     pub fn debug_mode(&self) -> bool {
@@ -189,13 +189,13 @@ impl Settings {
     }
 }
 
-pub fn load_configuration(debug: Option<bool>, theme: Option<&str>) -> Settings {
+pub fn load_configuration(debug: bool, theme: Option<&str>) -> Settings {
     let path_to_config = "/etc/lightdm/web-greeter.yml";
     let content = std::fs::read_to_string(path_to_config).expect("Can not read config file");
     let mut config =
         serde_yaml_ng::from_str::<Settings>(&content).expect("config file structure error");
-    if let Some(debug) = debug {
-        config.set_debug_mode(debug);
+    if debug {
+        config.set_debug_mode(true);
     }
     if let Some(theme) = theme {
         config.set_theme(theme);

@@ -3,5 +3,6 @@
   <gresource prefix="/com/github/zaynchen/lightdm-webkit-greeter">
     <file compressed="true" preprocess="xml-stripblanks">menubar.ui</file>
     <file compressed="true">style.css</file>
+    <file compressed="true">lightdm.js</file>
   </gresource>
 </gresources>
