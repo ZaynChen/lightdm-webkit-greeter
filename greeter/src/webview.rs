@@ -31,7 +31,7 @@ pub fn webview_new(debug: bool, theme_file: &str) -> WebView {
 pub fn user_message_received(
     webview: &WebView,
     message: &UserMessage,
-    dispatcher: &Dispatcher,
+    dispatcher: &Rc<Dispatcher>,
     loaded: &Rc<Cell<bool>>,
     win_props: &Rc<BrowserProperties>,
 ) -> bool {
@@ -53,7 +53,7 @@ pub fn user_message_received(
             true
         }
         Some("console") => {
-            crate::webview::show_console_error_prompt(webview, message);
+            crate::webview::show_console_error_prompt(webview, message, dispatcher);
             true
         }
         Some(_) => {
@@ -64,9 +64,22 @@ pub fn user_message_received(
     }
 }
 
-pub fn show_console_error_prompt(webview: &WebView, _message: &UserMessage) {
+pub fn show_console_error_prompt(
+    webview: &WebView,
+    message: &UserMessage,
+    dispatcher: &Rc<Dispatcher>,
+) {
+    let params = message.parameters().unwrap();
+
+    let msg_var = params.child_value(1);
+    let msg = msg_var.str().unwrap();
+    let source_id_var = params.child_value(2);
+    let source_id = source_id_var.str().unwrap();
+    let line = u32::from_variant(&params.child_value(3)).unwrap();
+
     let dialog = gtk::AlertDialog::builder()
-        .message("An error ocurred")
+        .message("An error ocurred. Do you want to change to default theme? (litarvan)")
+        .detail(format!(r##"{source_id} {line}: {msg}"##))
         .buttons(["_Cancel", "_Use default theme", "_Reload theme"])
         .build();
 
@@ -74,5 +87,36 @@ pub fn show_console_error_prompt(webview: &WebView, _message: &UserMessage) {
     let window = root
         .downcast_ref::<gtk::ApplicationWindow>()
         .expect("webview.root is not a ApplicationWindow");
-    dialog.choose(Some(window), Some(&Cancellable::new()), |_e| {});
+
+    dialog.choose(
+        Some(window),
+        Some(&Cancellable::new()),
+        gtk::glib::clone!(
+            #[strong]
+            message,
+            #[strong]
+            dispatcher,
+            move |res| {
+                let response = res.unwrap();
+
+                let stop_prompts = match response {
+                    0 => false,
+                    1 => {
+                        dispatcher.change_theme(Some("gruvbox"));
+                        true
+                    }
+                    2 => {
+                        dispatcher.change_theme(None);
+                        true
+                    }
+                    _ => false,
+                };
+
+                message.send_reply(&UserMessage::new(
+                    "console-done",
+                    Some(&stop_prompts.to_variant()),
+                ));
+            }
+        ),
+    );
 }

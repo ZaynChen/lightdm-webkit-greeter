@@ -9,7 +9,7 @@ mod dispatcher {
     use gtk::glib::VariantTy;
     use webkit::UserMessage;
 
-    use std::rc::Rc;
+    use std::{cell::RefCell, rc::Rc};
 
     use crate::{
         browser::{Browser, BrowserProperties},
@@ -22,7 +22,7 @@ mod dispatcher {
     };
 
     pub struct Dispatcher {
-        greeter_config: GreeterConfig,
+        greeter_config: RefCell<GreeterConfig>,
         greeter_comm: GreeterComm,
         lightdm: LightDM,
         theme_utils: ThemeUtils,
@@ -38,7 +38,7 @@ mod dispatcher {
                 lightdm.shared_data_directory().to_string(),
             ];
             let theme_utils = ThemeUtils::new(context.clone(), &allowed_dirs, &theme);
-            let greeter_config = GreeterConfig::new(context.clone(), config);
+            let greeter_config = RefCell::new(GreeterConfig::new(context.clone(), config));
             let greeter_comm = GreeterComm::new(context, browsers);
             Self {
                 greeter_config,
@@ -48,11 +48,21 @@ mod dispatcher {
             }
         }
 
+        pub fn change_theme(&self, theme: Option<&str>) {
+            if let Some(theme) = theme {
+                self.greeter_config.borrow_mut().change_theme(theme);
+            }
+
+            let primary_html = self.greeter_config.borrow().primary_html();
+            let secondary_html = self.greeter_config.borrow().secondary_html().unwrap();
+            self.greeter_comm.load_theme(primary_html, secondary_html);
+        }
+
         pub fn send(&self, message: &UserMessage, win_props: &BrowserProperties) {
             let reply = match parse(message) {
                 Message::GreeterConfig((method, _)) => {
                     // logger_warn!("greeter_config.{method}({json_params})");
-                    let reply = self.greeter_config.handle(&method);
+                    let reply = self.greeter_config.borrow().handle(&method);
                     UserMessage::new("reply", Some(&reply))
                 }
                 Message::GreeterComm((method, json_params)) => {

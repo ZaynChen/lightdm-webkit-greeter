@@ -169,6 +169,11 @@ impl Settings {
         self.themes_dir.as_deref()
     }
 
+    pub fn change_theme(&mut self, theme: &str) {
+        self.set_theme(theme);
+        self.set_theme_html();
+    }
+
     fn set_themes_dir(&mut self, themes_dir: &str) {
         self.themes_dir = Some(themes_dir.to_string())
     }
@@ -181,10 +186,13 @@ impl Settings {
         self.greeter.theme = theme.to_string();
     }
 
-    fn set_theme_html(&mut self, primary_html: String, secondary_html: Option<String>) {
+    fn set_theme_html(&mut self) {
+        let theme = self.theme();
+        let themes_dir = self.themes_dir().unwrap_or(DEFAULT_THEMES_DIR);
+        let (primary_html, secondary) = load_theme_html(theme, themes_dir);
         self.theme = Some(Theme {
             primary_html,
-            secondary_html,
+            secondary_html: Some(secondary),
         })
     }
 }
@@ -203,10 +211,7 @@ pub fn load_configuration(debug: bool, theme: Option<&str>) -> Settings {
     if config.themes_dir().is_none() {
         config.set_themes_dir(DEFAULT_THEMES_DIR);
     }
-
-    let (primary_html, secondary_html) =
-        load_theme_html(config.theme(), config.themes_dir().unwrap());
-    config.set_theme_html(primary_html, Some(secondary_html));
+    config.set_theme_html();
 
     logger_debug!("Configuration loaded");
     config

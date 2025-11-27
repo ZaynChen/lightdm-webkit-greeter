@@ -3,7 +3,7 @@ use lightdm::prelude::*;
 
 use ext::prelude::*;
 
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use crate::settings::Settings;
 
@@ -17,6 +17,12 @@ impl Deref for GreeterConfig {
 
     fn deref(&self) -> &Self::Target {
         &self.config
+    }
+}
+
+impl DerefMut for GreeterConfig {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.config
     }
 }
 

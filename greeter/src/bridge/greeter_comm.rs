@@ -44,6 +44,18 @@ impl GreeterComm {
         }
     }
 
+    pub(super) fn load_theme(&self, primary: String, secondary: String) {
+        self.browsers.iter().for_each(|browser| {
+            let theme_file = if browser.primary() {
+                &primary
+            } else {
+                &secondary
+            };
+            let uri = "file://".to_string() + theme_file;
+            browser.webview().load_uri(&uri);
+        });
+    }
+
     fn greeter_comm_broadcast_cb(&self, args: &[jsc::Value]) -> jsc::Value {
         let context = &self.context;
         self.browsers

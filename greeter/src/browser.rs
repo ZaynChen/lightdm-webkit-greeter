@@ -36,6 +36,10 @@ impl Browser {
         &self.webview
     }
 
+    pub fn primary(&self) -> bool {
+        self.properties.is_primary
+    }
+
     pub fn connect_user_message_received(&self, dispatcher: Rc<Dispatcher>) {
         let win_props = &self.properties;
         let loaded = &self.loaded;
