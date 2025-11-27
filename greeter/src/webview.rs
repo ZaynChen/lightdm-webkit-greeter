@@ -37,23 +37,20 @@ pub fn user_message_received(
 ) -> bool {
     match message.name().as_deref() {
         Some("ready-to-show") => {
-            let root = webview.root().expect("webview.root is not browser");
-            match root.downcast::<gtk::ApplicationWindow>() {
-                Ok(window) => {
-                    if loaded.get() {
-                        return true;
-                    }
-                    webview.grab_focus();
-                    window.present();
-                    loaded.set(true);
-                    logger_debug!("Lightdm webkit greeter started win: {}", window.id());
-                    true
-                }
-                Err(_) => {
-                    logger_error!("webview.root is not a browser");
-                    false
-                }
+            if loaded.get() {
+                return true;
             }
+
+            let root = webview.root().expect("webview.root is None");
+            let window = root
+                .downcast_ref::<gtk::ApplicationWindow>()
+                .expect("webview.root is not a ApplicationWindow");
+            webview.grab_focus();
+            window.present();
+
+            loaded.set(true);
+            logger_debug!("Lightdm webkit greeter started win: {}", window.id());
+            true
         }
         Some("console") => {
             crate::webview::show_console_error_prompt(webview, message);
@@ -67,12 +64,15 @@ pub fn user_message_received(
     }
 }
 
-pub fn show_console_error_prompt(_webview: &WebView, _message: &UserMessage) {
+pub fn show_console_error_prompt(webview: &WebView, _message: &UserMessage) {
     let dialog = gtk::AlertDialog::builder()
         .message("An error ocurred")
         .buttons(["_Cancel", "_Use default theme", "_Reload theme"])
         .build();
-    let win = gtk::Window::builder().build();
-    dialog.choose(Some(&win), Some(&Cancellable::new()), |_e| {});
-    win.present();
+
+    let root = webview.root().expect("webview.root is not a browser");
+    let window = root
+        .downcast_ref::<gtk::ApplicationWindow>()
+        .expect("webview.root is not a ApplicationWindow");
+    dialog.choose(Some(window), Some(&Cancellable::new()), |_e| {});
 }
