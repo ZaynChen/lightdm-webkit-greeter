@@ -28,7 +28,7 @@ use gtk::{
         variant::{FromVariant, ToVariant},
     },
 };
-use wwpe::ffi::WebKitWebProcessExtension;
+use wwpe::{ConsoleMessageSource, ffi::WebKitWebProcessExtension};
 
 use std::cell::RefCell;
 
@@ -56,6 +56,7 @@ fn web_page_console_message_sent(
 ) {
     let message = &mut message.clone();
     let text = message.text().unwrap().to_string();
+    let source = message.source();
     let source_id = message.source_id().unwrap().to_string();
     let line = message.line();
 
@@ -66,7 +67,10 @@ fn web_page_console_message_sent(
     match message.level() {
         wwpe::ConsoleMessageLevel::Error => {
             eprintln!("{timestamp} [ ERROR ] {source_id} {line}: {text}");
-            if !*stop_prompts.borrow() && detect_theme_errors {
+            if !*stop_prompts.borrow()
+                && detect_theme_errors
+                && source != ConsoleMessageSource::Network
+            {
                 web_page_send_console_message_to_view(page, &text, &source_id, line, stop_prompts);
             }
         }
