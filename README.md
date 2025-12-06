@@ -52,4 +52,4 @@ cd lightdm-webkit-greeter
 The greeter exposes a JavaScript API to themes which they must use to interact with the greeter (in order to facilitate the user login process). For more details, check out the [API Documentation](https://doclets.io/Antergos/lightdm-webkit2-greeter/stable). 
 
 [webkit2-greeter]: https://github.com/Antergos/web-greeter/tree/stable "LightDM WebKit2 Greeter"
-[sea-greeter]: https://github.com/JezerM/web-greeter "Sea Greeter"
+[sea-greeter]: https://github.com/JezerM/sea-greeter "Sea Greeter"
