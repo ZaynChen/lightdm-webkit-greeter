@@ -8,8 +8,8 @@ edition = "2024"
 authors = ["Zayn Chen <zaynchen@qq.com>"]
 categories = ["GUI"]
 repository = "https://github.com/zaynchen/lightdm-webkit-greeter"
-license = "GPL-3.0"
-keywords = ["lightdm"]
+license = "GPL-3.0-or-later"
+keywords = ["lightdm", "webkit", "greeter"]
 
 [workspace.dependencies]
 gtk = { package = "gtk4", version = "0.10", features = ["v4_20"] }
