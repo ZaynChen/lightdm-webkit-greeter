@@ -10,6 +10,10 @@ the same as the outdated [lightdm-webkit2-greeter][webkit2-greeter]. This projec
 is ported from [sea-greeter][sea-greeter], with migration from gtk3 and webkit2gtk
 to gtk4 and webkitgtk.
 
+## Alternative
+
+[webkit-greeter][webkit-greeter] is based on this project, and support greetd(with hyprland) and lightdm.
+
 ## Known issues
 
 There are lots of issues, even not documented here, so it is not recommended to use this greeter yet.
@@ -53,3 +57,4 @@ The greeter exposes a JavaScript API to themes which they must use to interact w
 
 [webkit2-greeter]: https://github.com/Antergos/web-greeter/tree/stable "LightDM WebKit2 Greeter"
 [sea-greeter]: https://github.com/JezerM/sea-greeter "Sea Greeter"
+[webkit-greeter]: https://github.com/ZaynChen/webkit-greeter "WebKit Greeter"
