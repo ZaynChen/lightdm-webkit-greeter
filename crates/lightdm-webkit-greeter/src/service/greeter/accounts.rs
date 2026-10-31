@@ -1,0 +1,122 @@
+// SPDX-FileCopyrightText: 2025 ZaynChen <zaynchen@qq.com>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later AND LGPL-3.0-or-later
+
+use serde::Serialize;
+
+use std::sync::OnceLock;
+
+use super::dbus::AccountsService;
+
+#[derive(Debug, Serialize)]
+pub struct User {
+    /// HomeDirectory property
+    home_directory: Option<String>,
+    /// IconFile property
+    #[serde(rename(serialize = "image"))]
+    icon_file: Option<String>,
+    /// Language property
+    language: Option<String>,
+    /// RealName property
+    #[serde(rename(serialize = "display_name"))]
+    real_name: Option<String>,
+    /// Session property
+    session: Option<String>,
+    /// Uid property
+    #[serde(skip_serializing)]
+    uid: Option<u32>,
+    /// UserName property
+    #[serde(rename(serialize = "username"))]
+    user_name: Option<String>,
+}
+
+pub struct UserManager {
+    users: Vec<User>,
+}
+
+impl UserManager {
+    pub fn instance() -> &'static Self {
+        static USER_MANAGER: OnceLock<UserManager> = OnceLock::new();
+        USER_MANAGER.get_or_init(|| {
+            let mut users = match AccountsService::accounts_proxy() {
+                Some(accounts_proxy) => zbus::block_on(accounts_proxy.list_cached_users())
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|o| {
+                        let user = AccountsService::user_proxy(o);
+                        zbus::block_on(async {
+                            User {
+                                home_directory: user.home_directory().await.ok(),
+                                icon_file: user.icon_file().await.ok(),
+                                language: user.language().await.ok(),
+                                real_name: user.real_name().await.ok(),
+                                session: user.session().await.ok(),
+                                uid: user.uid().await.map(|u| u as u32).ok(),
+                                user_name: user.user_name().await.ok(),
+                            }
+                        })
+                    })
+                    .collect(),
+                None => vec![],
+            };
+            let pwd_users: Vec<_> = pwd::Passwd::iter()
+                .map(|u| User {
+                    home_directory: Some(u.dir),
+                    icon_file: None,
+                    language: None,
+                    real_name: u.gecos,
+                    session: None,
+                    uid: Some(u.uid),
+                    user_name: Some(u.name),
+                })
+                .filter(|u| {
+                    let (uid_min, uid_max) = get_uid_minmax();
+                    u.uid.is_some_and(|uid| uid_min <= uid && uid <= uid_max)
+                })
+                .collect();
+
+            let uids: Vec<_> = users.iter().map(|u| u.uid).collect();
+            users.extend(
+                pwd_users
+                    .into_iter()
+                    .filter(|u| !uids.contains(&u.uid))
+                    .collect::<Vec<_>>(),
+            );
+            Self { users }
+        })
+    }
+
+    pub fn list_users(&self) -> &[User] {
+        &self.users
+    }
+}
+
+fn get_uid_minmax() -> (u32, u32) {
+    match std::fs::read_to_string("/etc/login.defs") {
+        Ok(content) => {
+            let minmax: Vec<_> = content
+                .lines()
+                .filter(|l| l.starts_with("UID_MIN") || l.starts_with("UID_MAX"))
+                .filter_map(|s| {
+                    s.trim_start_matches("UID_MIN")
+                        .trim_start_matches("UID_MAX")
+                        .trim()
+                        .parse::<u32>()
+                        .ok()
+                })
+                .collect();
+            if minmax.len() == 2 {
+                (minmax[0], minmax[1])
+            } else {
+                log::error!("/etc/login.defs is broken, using default UID_MIN=1000, UID_MAX=60000");
+                (1000, 60000)
+            }
+        }
+        Err(_) => {
+            log::error!(
+                "Failed to read /etc/login.defs, using default UID_MIN=1000, UID_max=60000"
+            );
+            (1000, 60000)
+        }
+    }
+}

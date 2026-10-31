@@ -1,0 +1,126 @@
+// SPDX-FileCopyrightText: 2025 ZaynChen <zaynchen@qq.com>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+use serde::{Deserialize, Serialize};
+
+use crate::constants::{
+    CONFIG_PATH, DEFAULT_BACKGROUND_IMAGES_DIR, DEFAULT_THEME, DEFAULT_THEME_DIR,
+};
+
+#[derive(Clone, Default, Debug, Deserialize)]
+pub struct Config {
+    branding: Branding,
+    greeter: Greeter,
+    #[serde(default = "default_themes_dir")]
+    themes_dir: String,
+    primary_monitor: Option<String>,
+}
+
+pub fn default_themes_dir() -> String {
+    DEFAULT_THEME_DIR.to_string()
+}
+
+impl Config {
+    pub fn new(debug: bool, theme: Option<&str>) -> Self {
+        let mut config: Config = match std::fs::read_to_string(CONFIG_PATH) {
+            Ok(content) => toml::from_str(&content).expect("config file structure error"),
+            Err(e) => panic!("Can not read config file: {e}"),
+        };
+        if debug {
+            config.set_debug_mode(true);
+        }
+        if let Some(theme) = theme {
+            config.set_theme(theme);
+        }
+
+        log::debug!("Configuration loaded");
+        config
+    }
+
+    pub fn debug_mode(&self) -> bool {
+        self.greeter.debug_mode
+    }
+
+    pub fn detect_theme_errors(&self) -> bool {
+        self.greeter.detect_theme_errors
+    }
+
+    pub fn secure_mode(&self) -> bool {
+        self.greeter.secure_mode
+    }
+
+    pub fn theme(&self) -> &str {
+        &self.greeter.theme
+    }
+
+    pub fn greeter(&self) -> &Greeter {
+        &self.greeter
+    }
+
+    pub fn branding(&self) -> &Branding {
+        &self.branding
+    }
+
+    pub fn background_images_dir(&self) -> &str {
+        &self.branding.background_images_dir
+    }
+
+    pub fn themes_dir(&self) -> &str {
+        &self.themes_dir
+    }
+
+    pub fn primary_monitor(&self) -> Option<&str> {
+        self.primary_monitor.as_deref()
+    }
+
+    fn set_debug_mode(&mut self, debug_mode: bool) {
+        self.greeter.debug_mode |= debug_mode;
+    }
+
+    fn set_theme(&mut self, theme: &str) {
+        self.greeter.theme = theme.to_string();
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Branding {
+    background_images_dir: String,
+    logo_image: String,
+    user_image: String,
+}
+
+impl Default for Branding {
+    fn default() -> Self {
+        Self {
+            background_images_dir: DEFAULT_BACKGROUND_IMAGES_DIR.to_string(),
+            logo_image: Default::default(),
+            user_image: Default::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Greeter {
+    debug_mode: bool,
+    detect_theme_errors: bool,
+    screensaver_timeout: u32,
+    secure_mode: bool,
+    theme: String,
+    icon_theme: Option<String>,
+    time_language: Option<String>,
+}
+
+impl Default for Greeter {
+    fn default() -> Self {
+        Self {
+            debug_mode: false,
+            detect_theme_errors: true,
+            screensaver_timeout: 300,
+            secure_mode: true,
+            theme: DEFAULT_THEME.to_string(),
+            icon_theme: Default::default(),
+            time_language: Default::default(),
+        }
+    }
+}

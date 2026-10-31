@@ -1,0 +1,36 @@
+[package]
+name = "lightdm-webkit-greeter"
+version = "0.1.0"
+edition.workspace = true
+description = "LightDM WebKit Greeter"
+repository.workspace = true
+license = "GPL-3.0-or-later"
+keywords = ["greeter", "lightdm", "webkit"]
+categories = ["GUI"]
+build = "build.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+gettext-rs = { version = "0.8", features = ["gettext-system"] }
+libc = "0.2"
+pwd = "1"
+zbus = "6"
+
+log = "0.4"
+logger.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+toml = { version = "1", features = ["serde"] }
+
+gtk.workspace = true
+jsc.workspace = true
+webkit.workspace = true
+
+x11rb = "0.14"
+xkb-data = "0.2"
+
+lightdm_client = "0.1"
+
+[build-dependencies]
+glib-build-tools = "0.22"

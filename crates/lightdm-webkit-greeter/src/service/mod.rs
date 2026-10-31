@@ -1,0 +1,118 @@
+// SPDX-FileCopyrightText: 2025 ZaynChen <zaynchen@qq.com>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+mod greeter;
+mod greeter_comm;
+mod greeter_config;
+mod theme_utils;
+
+pub use dispatcher::Dispatcher;
+
+mod dispatcher {
+    use webkit::{UserMessage, WebView, gtk::glib::VariantTy};
+
+    use crate::config::Config;
+
+    use super::{
+        greeter::LightDMGreeter, greeter_comm::GreeterComm, greeter_config::GreeterConfig,
+        theme_utils::ThemeUtils,
+    };
+
+    pub struct Dispatcher {
+        greeter: LightDMGreeter,
+        greeter_config: GreeterConfig,
+        greeter_comm: GreeterComm,
+        theme_utils: ThemeUtils,
+    }
+
+    impl Dispatcher {
+        pub fn new(config: Config, primary: WebView, secondaries: Vec<WebView>) -> Self {
+            let allowed_dirs = [
+                config.themes_dir().to_string(),
+                config.background_images_dir().to_string(),
+            ];
+            Self {
+                theme_utils: ThemeUtils::new(&allowed_dirs, config.theme()),
+                greeter: LightDMGreeter::new(&primary),
+                greeter_config: GreeterConfig::new(config),
+                greeter_comm: GreeterComm::new(primary, secondaries),
+            }
+        }
+
+        pub fn primary(&self) -> &WebView {
+            self.greeter_comm.primary()
+        }
+
+        pub fn secondaries(&self) -> &[WebView] {
+            self.greeter_comm.secondaries()
+        }
+
+        pub fn themes_dir(&self) -> String {
+            self.greeter_config.themes_dir().to_string()
+        }
+
+        pub fn send(&self, message: &UserMessage) {
+            let reply = match parse(message) {
+                Message::GreeterConfig((method, _)) => {
+                    // log::debug!("greeter_config.{method}({json_args})");
+                    let reply = self.greeter_config.handle(&method);
+                    UserMessage::new("reply", Some(&reply))
+                }
+                Message::GreeterComm((method, json_args)) => {
+                    // log::debug!("greeter_comm.{method}({json_args})");
+                    let reply = self.greeter_comm.handle(&method, &json_args);
+                    UserMessage::new("reply", Some(&reply))
+                }
+                Message::Greeter((method, json_args)) => {
+                    // log::debug!("greeter.{method}({json_args})");
+                    let reply = self.greeter.handle(&method, &json_args);
+                    UserMessage::new("reply", Some(&reply))
+                }
+                Message::ThemeUtils((method, json_args)) => {
+                    // log::debug!("theme_utils.{method}({json_args})");
+                    let reply = self.theme_utils.handle(&method, &json_args);
+                    UserMessage::new("reply", Some(&reply))
+                }
+                _ => {
+                    log::warn!("{:?}-{:?}", message.name(), message.parameters());
+                    UserMessage::new("", None)
+                }
+            };
+            // log::warn!("{:?}-{:?}", reply.name(), reply.parameters());
+            message.send_reply(&reply);
+        }
+    }
+
+    enum Message {
+        GreeterConfig((String, String)),
+        Greeter((String, String)),
+        GreeterComm((String, String)),
+        ThemeUtils((String, String)),
+        Unknown,
+    }
+
+    fn parse(message: &UserMessage) -> Message {
+        let (method, json_args) = if let Some(params) = message.parameters()
+            && params.is_type(VariantTy::ARRAY)
+            && params.n_children() == 2
+            && let method = params.child_value(0).str()
+            && method.is_some_and(|m| !m.is_empty())
+        {
+            (
+                method.unwrap().to_string(),
+                params.child_value(1).str().unwrap().to_string(),
+            )
+        } else {
+            return Message::Unknown;
+        };
+
+        match message.name().as_deref() {
+            Some("greeter") => Message::Greeter((method, json_args)),
+            Some("greeter_config") => Message::GreeterConfig((method, json_args)),
+            Some("greeter_comm") => Message::GreeterComm((method, json_args)),
+            Some("theme_utils") => Message::ThemeUtils((method, json_args)),
+            _ => Message::Unknown,
+        }
+    }
+}

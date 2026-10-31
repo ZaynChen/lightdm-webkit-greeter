@@ -3,4 +3,4 @@ Name=LightDM WebKit Greeter
 Comment=Greeter for LightDM
 Exec=lightdm-webkit-greeter
 Type=Application
-X-Ubuntu-Gettext-Domain=web-greeter
+X-Ubuntu-Gettext-Domain=lightdm-webkit-greeter

@@ -1,17 +1,18 @@
 [workspace]
 resolver = "3"
-members = ["ext", "greeter", "webext"]
+members = ["crates/lightdm-webkit-greeter", "crates/webkit-greeter-webext"]
+default-members = ["crates/lightdm-webkit-greeter", "crates/webkit-greeter-webext"]
 
 [workspace.package]
-version = "0.1.0"
 edition = "2024"
-authors = ["Zayn Chen <zaynchen@qq.com>"]
-categories = ["GUI"]
 repository = "https://github.com/zaynchen/lightdm-webkit-greeter"
-license = "GPL-3.0-or-later"
-keywords = ["lightdm", "webkit", "greeter"]
 
 [workspace.dependencies]
-gtk = { package = "gtk4", version = "0.10", features = ["v4_20"] }
-jsc = { package = "javascriptcore6", version = "0.5", features = ["v2_48"] }
-ext = { path = "ext" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+gtk = { package = "gtk4", version = "0.11", features = ["v4_20"] }
+jsc = { package = "jsc6", git = "https://github.com/zaynchen/webkit-greeter.git", version = "0.6" }
+logger = { git = "https://github.com/zaynchen/webkit-greeter.git", version = "0.1" }
+webkit = { package = "webkit6", version = "0.6" }
+wwpe = { package = "webkit-web-process-extension6", version = "0.6" }
